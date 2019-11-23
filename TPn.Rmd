@@ -16,7 +16,7 @@ header-includes:
 - \usepackage{booktabs}
 ---
 
-```{r global_options, include=FALSE}
+```{r global_options, include = FALSE}
 knitr::opts_chunk$set(fig.align = 'center',fig.pos = 'H')
 
 library(magrittr)
@@ -25,13 +25,10 @@ library(ggthemes)
 library(Rmisc)
 library(plyr)
 options(knitr.table.format = "pandoc") 
-
 ```
 
-```{r chargement, echo = FALSE}
+```{r chargement, include = FALSE}
 rm(list=ls()) #nettoyage complet de l'environnement
-library(FactoMineR) #package installer au préalable : contient les données decathlon
-data("decathlon")
 
 #L'initialisation du jeu de données
 anorexie <- read.table(file = "DonneesAnorexie.txt", header = TRUE)
@@ -43,44 +40,35 @@ anorexie$post <- anorexie$post * 0.453
 cont <- anorexie[anorexie$trait == 'Cont', ]
 cbt <- anorexie[anorexie$trait == 'CBT', ]
 ft <- anorexie[anorexie$trait == 'FT', ]
-
-#knitr::kable(
-#  head(anorexie, 3), booktabs = TRUE, 
-#  caption = 'the first 3 rows of the data'
-#)
-
 ```
 
 # Introduction
 
 Au sujet de l'analyse des impacts de deux types de traitements de l'anorexie, la thérapie cognitive behavioural treatment(`CBT`) et la thérapie familiale(`FT`), on se donne un jeu de données consistant à trois colonnes, le type de traitement, les poids en livre de patients avant la thérapie qu'ils suivent respectivement et qui est éventuellement nul si dans le groupe de contrôle(`Cont`), et ceux de patients après leur thérapie.
 Donc, nous évaluerons les trois types de traitements en base de données de poids. Plus précisément, on considère qu’une thérapie est valable pour un certain patient s’il gagne du poids. Afin de standardiser l’unité de poids à kilogramme, avant de commencer l’analyse des données, nous multiplions les poids par 0,453. Voilà les extraits des données de trois groupes:
+
 <center><font face="Century">
 Groupe de contrôle
-```{r extrait de données, echo=FALSE}
+```{r extrait de données cont, echo=FALSE}
 head(cont)
 ```
 Groupe Thérapie Cognitive Behavioural Treatment
-```{r echo=FALSE}
+```{r extrait de données cbt, echo=FALSE}
 head(cbt)
 ```
 Groupe Thérapie Familiale
-```{r echo = FALSE}
+```{r extrait de données ft, echo = FALSE}
 head((ft))
 ```
 </font></center>
 
 
 # Contrôle du jeu de données
-```{r, include=FALSE}
-anorexie$diff <- anorexie$post - anorexie$pre
-cont <- anorexie[anorexie$trait == 'Cont', ]
-cbt <- anorexie[anorexie$trait == 'CBT', ]
-ft <- anorexie[anorexie$trait == 'FT', ]
-```
+
 Dans le contexte d'une expérience médicale, d’après des principes scientifiques, il faut vérifier d’abord que l’échantillon soit suffisamment grand et relativement équilibré par groupe pour diminuer des erreurs aléatoires et tirer une conclusion crédible, et que la seule variable dans l’expérience soit la thérapie, ce qui demande les états de la maladie de chaque groupe sont approximatifs. Donc, nous étudions, par suite, les nombres de patients par groupe et les distributions du poids des patients au début de l’étude.
 
 ## Comparaison des nombres de patients par groupe
+
 ```{r include = FALSE}
 n1 <- sum(anorexie$trait == 'Cont') #26
 n2 <- sum(anorexie$trait == 'CBT') #29
@@ -92,24 +80,32 @@ piepercent <- function(x, labels=names(), title=NULL){
   legend("topright", labels, cex = 0.8, fill = economist_pal()(length(x)))
 }
 ```
+
 En comptant respectivement les nombres des lignes de données de trois groupes, nous trouvons que `r n1` patients sont dans le groupe `Cont`, que `r n2` patients suivent la thérapie `CBT`, et que `r n3` patients suivent la thérapie familiale.
+
 ```{r pourcentage par groupe, echo = FALSE}
 piepercent(c(n1,n2,n3), labels = c("Cont","CBT","FT"), "Pourcentage des nombres des patients dans chaque groupe")
 ```
-A l'aide du diagramme camembert ci-dessus, nous trouvons que la différence des nombre de patients du groupe Cont et du groupe `CBT` est négligeable, par contre, la proportion du groupe `FT` est assez petite en comparaison. En fait, le nombre des patients du groupe `FT` ne représente que `r round(n3*100/n2,2)`% du celui du groupe `CBT`. Mais leur proportions sont dans le même niveau, donc c'est un défaut pas grave et nous pouvons nous autoriser de continuer notre étude.
+
+A l'aide du diagramme camembert ci-dessus, nous trouvons que la différence des nombre de patients du groupe `Cont` et du groupe `CBT` est négligeable, par contre, la proportion du groupe `FT` est assez petite en comparaison. En fait, le nombre des patients du groupe `FT` ne représente que `r round(n3*100/n2,2)`% du celui du groupe `CBT`. Mais leur proportions sont dans le même niveau, donc c'est un défaut pas grave et nous pouvons nous autoriser de continuer notre étude.
 
 ## Comparaison des distributions du poids des patients au début de l'étude
+
+D’abord, par les histogrammes du nombre de patients, nous avons vu que ceux du groupe `CBT` et du groupe `FT` étaient similaires. Mais on ne peut rien conclure sur l'histogramme du groupe `Cont`.
+
 ```{r echo = FALSE}
 hist(cont$pre, freq = FALSE)
 hist(cbt$pre, freq = FALSE)
 hist(ft$pre, freq = FALSE)
 ```
-D’abord, par la boîte à moustaches, nous avons eu une vue globale des états de leur distribution, et nous avons trouvé qu’il y avait une relativement petite différence entre leur domaine de distribution. 
+
+Ensuite, par la boîte à moustaches, nous avons eu une vue globale des états de leur distribution, et nous avons trouvé qu’il y avait une relativement petite différence entre leur domaine de distribution. 
+
 ```{r distPre, echo = FALSE, fig.cap = 'Distribution des Poids des Patients avant le Traitment'}
-boxplot(cont$pre, cbt$pre, ft$pre, 
-        names = c("sans traitment", "thérapie CBT", "thérapie familiale"), main = "Distribution des Poids des Patients avant le Traitment", ylab = "poids(kg)")
+boxplot(cont$pre, cbt$pre, ft$pre, names = c("sans traitment", "thérapie CBT", "thérapie familiale"), main = "Distribution des Poids des Patients avant le Traitment", ylab = "poids(kg)")
 ```
-```{r echo = FALSE}
+
+```{r include = FALSE}
 s1 <- summary(cont$pre)
 s2 <- summary(cbt$pre)
 s3 <- summary(ft$pre)
@@ -120,7 +116,8 @@ sd1 <- sd(cont$pre)
 sd2 <- sd(cbt$pre)
 sd3 <- sd(ft$pre)
 ```
-Ensuite, nous avons calculé les informations en plus de détaille, et nous avons vu que dans le tableau ref, toutes les valeurs de même type, surtout les moyens et les variances éteint très proches. 
+
+Plus précisément, nous avons calculé les informations en détaille, et nous avons vu que dans le tableau ref, toutes les valeurs de même type, surtout les moyens et les variances éteint très proches. 
 
 |      | Min. | 1st Qu. | Median | Mean | 3rd Qu. | Max. | Std. |
 | ---- | ---- | ------- | ------ | ---- | ------- | ---- | ---- |
@@ -128,8 +125,8 @@ Ensuite, nous avons calculé les informations en plus de détaille, et nous avon
 | CBT  | `r round(s2[1],2)` | `r round(s2[2],2)` | `r round(s2[3],2)` | `r round(s2[4],2)` | `r round(s2[5],2)` | `r round(s2[6],2)` | `r round(sd2,2)` |
 | FT   | `r round(s3[1],2)` | `r round(s3[2],2)` | `r round(s3[3],2)` | `r round(s3[4],2)` | `r round(s3[5],2)` | `r round(s3[6],2)` | `r round(sd3,2)` |
 
- 
 De plus, le diagramme quantile-quantile visualise directement la comparaison de leur distribution.
+
 ```{r echo = FALSE}
 qqplot(cont$pre, cbt$pre)
 abline(0,1, col = 2)
@@ -140,66 +137,101 @@ abline(0,1, col = 2)
 qqplot(cbt$pre, ft$pre)
 abline(0,1, col = 2)
 ```
+
 Comme tous les points sont proches de la ligne de la fonction identique, nous pouvons conclure que les trois groupes ont la même distribution du poids des patients au début de l’étude.
 
 Donc, nous avons bien vérifié que la composition des trois groupes de patients qui suivent des traitements différents à été bien faite. Notre l’étude a alors été correctement menée.
 
-# Comment évaluer le succès d'un traitement?
+# Evaluation du succès d'un traitement
+
 ```{r ajout de la colonne diff, include=FALSE}
 anorexie$diff <- anorexie$post - anorexie$pre
+cont <- anorexie[anorexie$trait == 'Cont', ]
+cbt <- anorexie[anorexie$trait == 'CBT', ]
+ft <- anorexie[anorexie$trait == 'FT', ]
 ```
-\bigskip
 
-## Est-ce raisonnable de comparer simplement le poids des patients à la fin de l’étude ?
+Dans ce contexte médical, on ne peut pas juger la validité d’un traitement en simplement comparant le poids des patients à la fin de l’étude. Parce que d’un part, il y a des différences du poids des patients au début de l’étude entre les groupes, donc le poids des patients à la fin de l’étude d’un groupe est plus élevé que celui d’un autre groupe ne signifie pas forcément qu’il y avait un augment du poids des patients. D’autre part, un traitement peut faire des impacts différents sur différents patients. Par exemple, une partie des patients gagne du poids et l’autre en perd, mais la distribution du poids des patients à la fin peut être similaire avec celle au début. Une méthode raisonnable est donc d’apparaître le changement du poids des patients, c’est-à-dire, on compare les variations de poids durant l’étude. Donc, nous rajoutons la colonne `diff` comme la différence entre la valeur `pre` et la valeur `post`, qui représente l’impact d’un traitement à un patient.
 
-Non. Parce que...
+# Evolution du poids des patients qui n'a suivi pas aucun traitement
 
-## Ne serait-il pas plus pertinent de comparer les variations de poids durant l’étude?
+D’après la section précédente, nous étudions l’évolution du poids des patients du groupe de contrôle en analysant la colonne diff. En regardant son histogramme, il nous semble que la distribution est assez symétrique par rapport à 0, mais que plus de patients perdent du poids.
 
-Les pertes de poids sont très importantes pour ce éxperiment.(Explanation)
+```{r echo = FALSE}
+hist(cont$diff, freq = FALSE)
+```
 
+Et puis, nous avons calculé en plus de détailles les informations de ses quantiles, de sa moyenne et de sa variance.
 
-# Evaluer le différence de poids pour ce qui n'a suivi pas aucun traitement
-\bigskip
+```{r echo = FALSE}
+boxplot(cont$diff, main = "Variation des Poids des Patients sans Traitment", ylab = "poids(kg)")
+```
+
 ```{r ContDiff, echo = FALSE}
-summary(cont$diff)
-#Should we put histogram of the cont$diff too?
+s1 <- summary(cont$diff)
+sd1 <- sd(cont$diff)
 ```
 
-Note: the graph is right skewed with more than half of the patients losing weight.
+|      | Min. | 1st Qu. | Median | Mean | 3rd Qu. | Max. | Std. |
+| ---- | ---- | ------- | ------ | ---- | ------- | ---- | ---- |
+| Cont | `r round(s1[1],2)` | `r round(s1[2],2)` | `r round(s1[3],2)` | `r round(s1[4],2)` | `r round(s1[5],2)` | `r round(s1[6],2)` | `r round(sd1,2)` |
 
-# Trouver le meilleur traitement
-\bigskip
+D'après les résultats ci-dessus, nous concluons que plus de la moitié des personnes ont perdu du poids, et que chacun perd 0,2 kg en moyenne.
+
+# Comparaison des trois traitements
+
+Pour trouver la meilleure méthode entre les trois, nous les comparons par leur boîte à moustaches. Et nous voyons que la thérapie familiale se comporte le meilleur sur chaque indicateur statistique.
+
 ```{r comparasionTraitement, fig.cap = 'boxplot de différence de poids', echo = FALSE}
 boxplot(cont$diff, cbt$diff, ft$diff, names = c("sans traitment", "thérapie CBT", "thérapie familiale"), main = "Distribution de Changement de Poids", ylab = "différence en poids(kg)")
 ```
 
-Quelques points à noté: beaucoup d'outliers en CBT; le moyenne entre les trois; le range entre les trois.
+En fait, parmi les trois groupes, pour le traitement `FT`, les poids minimal et maximal, les quantiles médian, de première quatrième et de troisième quatrième et la valeur moyenne sont tous les plus élevés. Cela signifie que la thérapie a le meilleur impact aux patients. De plus, sa variance est la plus petite parmi les trois groupes. C’est-à-dire, cette thérapie est la plus stable. 
 
-# Comparer la distribution des différentes variables liées au poids par type de traitement et avec la loi normale
-
-```{r distributionNormale, fig.cap = '', echo = FALSE}
-m1 <- mean(cont$diff)
-m2 <- mean(cbt$diff)
-m3 <- mean(ft$diff)
-
-v1 <- sd(cont$diff)
-v2 <- sd(cbt$diff)
-v3 <- sd(ft$diff)
-
-#On fait le pre & post aussi?
-#How to align the plots?
-
-qqnorm((cont$diff-m1)/v1, ylim = c(-2,2), main = "Le Group Controle")
-abline(0,1, col = 2)
-
-qqnorm((cbt$diff-m2)/v2, ylim = c(-2, 2), main = "Le Thérapie CBT")
-abline(0,1, col = 2)
-
-qqnorm((ft$diff-m3)/v3, ylim = c(-2, 2), main = "Le Thérapie Familiale")
-abline(0,1, col = 2)
+```{r echo = FALSE}
+s1 <- summary(cont$diff)
+s2 <- summary(cbt$diff)
+s3 <- summary(ft$diff)
+m1 <- s1[4]
+m2 <- s2[4]
+m3 <- s3[4]
+sd1 <- sd(cont$diff)
+sd2 <- sd(cbt$diff)
+sd3 <- sd(ft$diff)
+#Quelques points à noté: beaucoup d'outliers en CBT; le moyenne entre les trois; le range entre les trois.
 ```
 
-On ne peut pas les modéliser par une loi normale parce que...
+|      | Min. | 1st Qu. | Median | Mean | 3rd Qu. | Max. | Std. |
+| ---- | ---- | ------- | ------ | ---- | ------- | ---- | ---- |
+| Cont | `r round(s1[1],2)` | `r round(s1[2],2)` | `r round(s1[3],2)` | `r round(s1[4],2)` | `r round(s1[5],2)` | `r round(s1[6],2)` | `r round(sd1,2)` |
+| CBT  | `r round(s2[1],2)` | `r round(s2[2],2)` | `r round(s2[3],2)` | `r round(s2[4],2)` | `r round(s2[5],2)` | `r round(s2[6],2)` | `r round(sd2,2)` |
+| FT   | `r round(s3[1],2)` | `r round(s3[2],2)` | `r round(s3[3],2)` | `r round(s3[4],2)` | `r round(s3[5],2)` | `r round(s3[6],2)` | `r round(sd3,2)` |
+
+Donc, d’après nous, la thérapie familiale est le meilleur traitement parmi les trois.
+
+# Distribution des différentes variables liées au poids
+
+A la fin de notre étude, nous faisons une analyse supplémentaire pour vérifier si la distribution des différentes variables liées aux poids peut être modélisée par une loi normale. Donc, nous analysons la distribution des variables pre, post et diff pour chaque groupe par le diagramme quantile-quantile et le teste de Kolmogorov-Smirnov.
+
+```{r distributionNormale, fig.cap = 'qbc', echo = FALSE}
+#How to align the plots? No idea..
+
+li <- c(1:9)
+lv <- list(cont$pre, cont$post, cont$diff, cbt$pre, cbt$post, cbt$diff, ft$pre, ft$post, ft$diff)
+ls <- c("pre - Le Groupe de Contrôle", "post - Le Groupe de Contrôle", "diff - Le Groupe de Contrôle", "pre - Le Thérapie CBT", "post - Le Thérapie CBT", "diff - Le Thérapie CBT", "pre - Le Thérapie Familiale", "post - Le Thérapie Familiale", "diff - Le Thérapie Familiale")
+
+for (i in li) {
+  v <- as.numeric(unlist(lv[i]))
+  s <- ls[i]
+  std <- (v-mean(v))/sd(v)
+  qqnorm(std, main = s)
+  abline(0,1, col = 2)
+  print(ks.test(x = std, y = 'pnorm'))
+}
+```
+
+D'après la p-value et la valeur D du teste de Kolmogorov-Smirnov, nous confirmons que pour le groupe `Cont`, les variables `pre`, `post` et `diff` suivent des lois normales; pour le groupe `CBT`, les variables `pre` et `post` suivent des lois normales; et pour le groupe `FT`, les variables `pre` et `diff` suivent des lois normales.
 
 # Conclusion
+
+Vue les analyses précédentes, nous avons vérifié que la composition des trois groupes de patients qui suivent des traitements différents avait été bien faite. Et, on peut choisir les variations de poids durant l’étude comme une méthode raisonnable de l’évaluation du succès d’un traitement. Par cette méthode, nous avons trouvé qu’un patient perdrait du poids de 0,2 kg en moyenne s’il ne suit aucune thérapie. Au contraire, les traitements CBT et FT sont en général valables pour les patients de l’anorexie. Et le traitement FT est le plus efficace entre les deux.
